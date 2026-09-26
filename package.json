@@ -1,0 +1,41 @@
+{
+  "name": "dsh-dual-checkin",
+  "displayName": "DSH Trae + WorkBuddy Check-in",
+  "description": "One DeepSeek Harness plugin that checks in Trae and WorkBuddy from local login files only. The two platforms run independently and do not block each other.",
+  "version": "1.1.0",
+  "author": "local",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "main": "lib/index.mjs",
+  "exports": {
+    ".": "./lib/index.mjs",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./client": "./lib/client.js"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "slots",
+        "locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-host-webserver": "^0.1.5-rc.1 || ^0.1.7-rc.1"
+  }
+}

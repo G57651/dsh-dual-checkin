@@ -1,0 +1,5 @@
+# Standalone dual check-in. Distinct from dsh-connect-trae, dsh-connect-workbuddy, dsh-buddy-checkin.
+- insert:
+    - id: dsh-dual-checkin
+      name: dsh-dual-checkin
+      config: {}
