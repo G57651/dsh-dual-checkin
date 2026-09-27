@@ -1,6 +1,6 @@
 # dsh-dual-checkin
 
-DeepSeek Harness 签到插件：一个插件同时完成 **Trae** 与 **WorkBuddy** 的每日签到，并在主页侧边栏提供签到状态与积分面板。登录态**只读本机文件**——不读取青龙环境变量里的 token / uid / 账号列表，也不把解出的 token 写入 settings 或状态文件。
+DeepSeek Harness 签到插件：一个插件同时完成 **Trae** 与 **WorkBuddy** 的每日签到，并在主页侧边栏提供签到状态与积分面板。登录态**只读本机文件**
 
 ## 功能
 
