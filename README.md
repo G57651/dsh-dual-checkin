@@ -1,6 +1,6 @@
 # dsh-dual-checkin
 
-DeepSeek Harness 签到插件：一个插件同时完成 **Trae** 与 **WorkBuddy** 的每日签到，并在主页侧边栏提供签到状态与积分面板。登录态**只读本机文件**
+DeepSeek Harness 签到插件：一个插件同时完成 **Trae** 与 **WorkBuddy** 的每日签到，并在主页侧边栏提供签到状态与积分面板。登录态**只读本机文件**——不读取青龙环境变量里的 token / uid / 账号列表，也不把解出的 token 写入 settings 或状态文件。
 
 ## 功能
 
@@ -21,7 +21,7 @@ dsh plugin --profile desktop add github:G57651/dsh-dual-checkin
 **Web UI**：Plugins 页 → Git 填 `github:G57651/dsh-dual-checkin`；或下载 Release / `pnpm pack` 产出的 tarball 后：
 
 ```sh
-dsh plugin --profile desktop add dsh-dual-checkin-1.1.0.tgz
+dsh plugin --profile desktop add dsh-dual-checkin-1.2.0.tgz
 ```
 
 **克隆后本地安装**
@@ -54,3 +54,9 @@ WorkBuddy 的明文 JWT 直接使用；`$wbEncrypted` 信封按 dsh-buddy-checki
 - **无设置页**：不注册 `settings.section`，无手动签到入口。
 - **与同类插件不冲突**：entry id、路由和状态文件均独立于 `dsh-connect-trae`、`dsh-connect-workbuddy`、`dsh-buddy-checkin`，可并存。
 - 请通过标准渠道（GitHub / tarball）安装，不要把解包目录直接装进正在运行的 profile。
+
+## 变更记录
+
+### 1.2.0
+
+- **package.json**：`@deepseek-ai/dsh-host-webserver` peer 范围放宽为 `^0.1.5-rc.1 || ^0.1.7-rc.1 || ^0.2.0-rc.1`——0.2.0-rc.1 起宿主对 `@deepseek-ai/dsh-*` 命名空间的 peerDependencies 做兼容性预检（`semver.satisfies` 含 prerelease），旧范围在 0.2.0-rc.1 上会被预检禁用（stderr 报 "disabling profile plugin"）。宿主 webServer 的 `register(WebRoute{kind,path,handler})` API 实际未变，此改动仅为通过预检，宿主侧代码零改动。
