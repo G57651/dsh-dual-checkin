@@ -57,6 +57,15 @@ WorkBuddy 的明文 JWT 直接使用；`$wbEncrypted` 信封按 dsh-buddy-checki
 
 ## 变更记录
 
+### 1.2.2（重构版，对外行为与接口不变）
+
+- **修复日志静默丢失**（对照开发文档 §10.1「`ctx.logger(name)` 返回具名 logger」）：旧代码把 `ctx.logger` 当普通 `{ warn, info }` 对象读，宿主为可调用服务形态时 `logger.error` / `logger.info` 均为 undefined，所有日志一行不打。现在按可调用形态优先（`ctx.logger('dsh-dual-checkin')`），对象形态回退，与 dsh-session-manager 0.1.2 的修法一致。
+- **去除冗余双重等待**：插件级 `inject = ['webServer']` 已保证 `apply` 运行前服务就绪（§2.1），apply 内不再二次 `ctx.inject(['webServer'])`，路由直接经 `ctx.effect` 注册；webServer 服务消失时插件随依赖整体卸载、恢复后重载（§5.4），行为等价。
+- **消除重复与死代码**：GET/POST 两个 handler 分支合并为 `handleStatus`（仅 `refreshCredits` 标志不同）；`syncCredits` 签名里从未使用的 `runner` 参数移除；`once` 更名为语义明确的 `singleFlight`；移除未使用的 `workbuddyDefaults` import。
+- **状态文件写入加固**：临时文件由固定 `.tmp` 名改为唯一随机名 + 原子改名，并发/崩溃不再可能留下可读到的半截 JSON。
+- **trae.mjs 内部整理**：`EXPIRING_WINDOW_MS` 常量归位到常量区、`defaults` 直接引用它；`postJson` 重试参数名 `retries` → `retryTimes` 与 tunables 统一（模块内私有 API）。签到流程、请求端点与解密逻辑零变化。
+- **package.json**：按开发文档 §7.3 双声明要求补齐 `devDependencies`（与 peerDependencies 同范围）。
+
 ### 1.2.1
 
 - **Trae 余额查询修复**：`ide_user_ent_usage` → `web_user_ent_usage`，请求体去掉 `req_source: 2`（与 dsh-connect-trae 的已验证只读端点一致）。
