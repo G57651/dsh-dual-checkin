@@ -24,7 +24,7 @@ dsh plugin --profile desktop add github:G57651/dsh-dual-checkin
 **Web UI**：Plugins 页 → Git 填 `github:G57651/dsh-dual-checkin`；或下载 Release / `pnpm pack` 产出的 tarball 后：
 
 ```sh
-dsh plugin --profile desktop add dsh-dual-checkin-1.3.6.tgz
+dsh plugin --profile desktop add dsh-dual-checkin-1.3.7.tgz
 ```
 
 **克隆后本地安装**
@@ -69,6 +69,10 @@ Trae / WorkBuddy。
 - 请通过标准渠道（GitHub / tarball）安装，不要把解包目录直接装进正在运行的 profile。
 
 ## 变更记录
+
+### 1.3.7
+
+- **侧栏图标重设计**：裸文本「✓」替换为票根对勾线性 SVG（24 viewBox、stroke 2、currentColor 随主题自适应）——对勾居左、右侧打孔虚线，与新版票据卡面板同构。
 
 ### 1.3.6
 
