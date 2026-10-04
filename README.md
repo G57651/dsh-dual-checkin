@@ -24,7 +24,7 @@ dsh plugin --profile desktop add github:G57651/dsh-dual-checkin
 **Web UI**：Plugins 页 → Git 填 `github:G57651/dsh-dual-checkin`；或下载 Release / `pnpm pack` 产出的 tarball 后：
 
 ```sh
-dsh plugin --profile desktop add dsh-dual-checkin-1.3.4.tgz
+dsh plugin --profile desktop add dsh-dual-checkin-1.3.5.tgz
 ```
 
 **克隆后本地安装**
@@ -69,6 +69,10 @@ Trae / WorkBuddy。
 - 请通过标准渠道（GitHub / tarball）安装，不要把解包目录直接装进正在运行的 profile。
 
 ## 变更记录
+
+### 1.3.5
+
+- **「今日已签到，跳过」时也显示本次获得积分**：当轮时间窗内 `CLAIMED`（含 claim 返回 `replayed: true`）意味着本轮奖励今天已经到账——无论由 Qoder 客户端还是本插件领取——把本轮宣传金额（100 Credits）填入 `gained`，与 WorkBuddy already 分支行为一致；此前该场景 `gained` 为 null，卡片「本次获得」显示「—」。
 
 ### 1.3.4
 
