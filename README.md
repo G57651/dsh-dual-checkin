@@ -24,7 +24,7 @@ dsh plugin --profile desktop add github:G57651/dsh-dual-checkin
 **Web UI**：Plugins 页 → Git 填 `github:G57651/dsh-dual-checkin`；或下载 Release / `pnpm pack` 产出的 tarball 后：
 
 ```sh
-dsh plugin --profile desktop add dsh-dual-checkin-1.3.5.tgz
+dsh plugin --profile desktop add dsh-dual-checkin-1.3.6.tgz
 ```
 
 **克隆后本地安装**
@@ -69,6 +69,10 @@ Trae / WorkBuddy。
 - 请通过标准渠道（GitHub / tarball）安装，不要把解包目录直接装进正在运行的 profile。
 
 ## 变更记录
+
+### 1.3.6
+
+- **面板重设计**：总览头（今日 N/3 已签 · 共得积分）+ 三张票据卡（平台 · 状态 · 时间 · 主数字「本次获得」· 剩余/已用/临期虚线账目行 · 撕票锯齿收尾）；PAT 临期/过期内嵌 Qoder 票据账目行（黄/红）；未签到平台的失败原因显示在票内注释行。纵向高度约为旧三卡布局的一半，数字全部等宽对齐。
 
 ### 1.3.5
 

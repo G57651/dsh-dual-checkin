@@ -2,7 +2,7 @@
   "name": "dsh-dual-checkin",
   "displayName": "DSH Trae + WorkBuddy + Qoder Check-in",
   "description": "One DeepSeek Harness plugin that checks in Trae, WorkBuddy and Qoder from local login info. The three platforms run independently and do not block each other.",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "author": "local",
   "license": "MIT",
   "type": "module",
