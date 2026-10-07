@@ -7,11 +7,11 @@ DeepSeek Harness 签到插件：一个插件同时完成 **Trae**、**WorkBuddy*
 ## 功能
 
 - **三平台状态卡**：主页侧边栏新增「签到」图标入口（`sidebar.panellist`），点击打开全宽面板——Trae、WorkBuddy 与 Qoder 各一张状态卡（已签到 / 未签到徽标 + 24 小时制签到时间 + 最近备注）。
-- **积分与到期跟踪**：常驻积分行（剩余 / 已使用 / 三天内到期，三列跨卡对齐）；三天内有积分到期时卡片内出现醒目提醒；签到前 / 签到后 / 本次获得对比默认直接显示。积分快照按 TTL（默认 5 分钟，可用 `creditsTtlSeconds` 调整）自动重新查询，签到每天只发生一次。
+- **积分与到期跟踪**：常驻积分行（剩余 / 已使用 / 三天内到期，三列跨卡对齐）；三天内有积分到期时卡片内出现醒目提醒；「本次获得」直接显示在票据卡主数字上，签到前 / 签到后的积分基线以状态路由的 `creditsBefore` / `creditsAfter` 暴露（面板不单独成行）。积分快照按 TTL（默认 5 分钟，可用 `creditsTtlSeconds` 调整）自动重新查询，签到每天只发生一次。失败结果同样有 60 秒负缓存——上游故障时面板轮询不会再反复重打上游。
 - **启动自动签到**：仅随 DSH 启动自动执行，幂等——当日已签自动跳过，无手动签到入口。
 - **PAT 首次启用录入与到期提醒**：在插件配置（或 cordis.yml）里填 `qoderPat`（令牌）与 `qoderPatExpiresAt`（到期时间）即可启用；剩余 ≤ `qoderPatExpiringDays` 天（默认 7）时面板 Qoder 卡片显示黄色提醒、日志同步 warn，过期显示红色提醒。不填令牌时回退读取 `qoderCredentialRef` 指向的凭据。
 - **互不阻塞**：`Promise.allSettled` 并行跑三个平台，一边失败 / 超时 / 未登录，另一边照常完成。
-- **状态面板可刷新**：数据来自宿主路由 `GET /plugins/dsh-dual-checkin/status`，页内可手动刷新。
+- **状态面板可刷新**：数据来自宿主路由 `/plugins/dsh-dual-checkin/status`，`GET` 读快照、`POST` 强制重查积分，页内刷新按钮走 `POST`。
 
 ## 安装
 
@@ -60,6 +60,10 @@ Trae / WorkBuddy。
 
 ## 实现说明与已知限制
 
+- **状态路由的访问守卫**：只服务回环对端（`127.0.0.0/8`、`::1`、`::ffff:127.x`）与回环 Host，`Origin` 限回环或桌面壳协议 `dsh-app:`；非法 authority（含 `@` 或 `/`、端口非纯数字，如 `localhost:80.evil.com`）一律 403。对端地址不可解析时失败关闭——宿主把 webserver 绑到非回环地址时，本插件路由不会被局域网访问。
+- **凭据文件权限**：回退通道直读 `~/.dsh/.credentials.yaml` 前先校验权限，`mode & 0o077 !== 0` 时拒绝读取并提示 `chmod 600`（与宿主 credentials-local 的 `GROUP_OTHER_BITS` 语义一致）。`qoderCredentialRef` 只允许 `[A-Za-z0-9_.-]` 字符集并做逐行前缀匹配，不会把配置值当正则执行。
+- **WorkBuddy 域名白名单**：`auth.domain` 必须匹配 `(^|\.)(workbuddy|codebuddy)\.cn$`，且 URL 不得携带用户名 / 密码 / 端口 / 路径 / 查询，否则该账号按未登录处理。Trae 与 Qoder 的出口为硬编码常量。
+- **请求不跟随跳转**：三个平台的 `fetch` 都显式 `redirect: 'error'`——跨源 3xx 会让请求头与请求体落到新源。
 - **积分口径**：Trae 余额取 `usage_summary`（`total_amount` − `consumed_amount`，权威口径），三天内到期按积分包 `expire_time` 逐包累加；WorkBuddy 走 `get-user-resource` 聚合——月度包看 `Cycle*` 字段（周期结束即重置），一次性包看 `Capacity*` 字段并剔除已过期 / 已用尽的（聚合规则与 dsh-connect-workbuddy 一致）；Qoder 走 `/sash/api/v2/me/usage`，聚合响应里的配额桶与资源包，字段缺失时对应项为 `null`。
 - **签到状态检测**：WorkBuddy 先查 `checkin-activity-status` 的 `today_checked_in`（无副作用），只在未签时调 `daily-checkin`；Trae 的 `checked_in` 为账号级状态，claim 按北京日幂等；Qoder 先读 `me/campaigns` 里 `actionType=CLAIM_BENEFIT` 且时间窗开启的那一轮（`startAt/endAt` 为秒级时间戳），`claimStatus=CLAIMED` 视为已签，否则 POST `/claim`（上游幂等，重复领取返回 `replayed=true` 不再发币）。
 - **Qoder 凭据失效**：PAT 无效 / 被撤销时 exchange 报错，备注明确提示「请在 DSH 设置 → 模型 → Qoder 凭据 更新 PAT」；接口 401 时先自动重换一次 jobToken 再试（不消耗重试次数），重换后仍 401 才判定登录失效。
@@ -68,7 +72,34 @@ Trae / WorkBuddy。
 - **与同类插件不冲突**：entry id、路由和状态文件均独立于 `dsh-connect-trae`、`dsh-connect-workbuddy`、`dsh-connect-qoder`、`dsh-buddy-checkin`，可并存。
 - 请通过标准渠道（GitHub / tarball）安装，不要把解包目录直接装进正在运行的 profile。
 
+## 开发
+
+```sh
+pnpm i          # 只有 peerDependencies，用于让回归测试能加载 lib/index.mjs
+pnpm test       # node --test "test/*.test.mjs"
+```
+
+回归用例把 `HOME` / `DSH_HOME` 重定向到临时目录并替换 `globalThis.fetch`，**不使用任何真实凭据、不发出任何真实请求**。
+
 ## 变更记录
+
+### 1.3.8
+
+安全与健壮性修复（全部在 `lib/` 内，零新增依赖；配套回归用例 46 条，本版之前 20 条失败）：
+
+- **状态路由守卫重写**：Host 判定由 `startsWith` 前缀比对改为 `hostnameOfHost()` 精确匹配（剥端口、拒绝含 `@` 或 `/` 的非法 authority、端口必须为纯数字），`localhost:80.evil.com` / `127.0.0.1:80.evil.com` / `[::1]:80.evil.com` 这类绕过值不再放行；新增**回环对端校验**（`req.socket.remoteAddress`），宿主把 webserver 绑到 `0.0.0.0` 时局域网请求不再读得到状态；响应补 `cache-control: no-store` / `x-content-type-options: nosniff` / `referrer-policy: no-referrer`。
+- **Qoder PAT 解析不再拼正则**：`qoderCredentialRef` 先过 `[A-Za-z0-9_.-]` 白名单，再逐行做字符串前缀匹配。此前 `.*` / `(A|B)` / `[` 之类的配置值会从 `.credentials.yaml` 里读出**另一个 ref 的无关密钥**，非法正则还会把原始错误字符串经 note 上屏。
+- **凭据文件权限校验**：回退直读 `~/.dsh/.credentials.yaml` 前校验 `mode & 0o077`，过宽即拒绝并提示 `chmod 600`（此前比宿主 credentials-local 更宽松）。
+- **WorkBuddy 域名白名单**：`auth.domain` 必须匹配 `(^|\.)(workbuddy|codebuddy)\.cn$` 且不得携带用户名 / 密码 / 端口 / 路径 / 查询，避免把改过的本机文件里的任意主机当上游。
+- **请求不跟随跳转**：三个平台的 `fetch` 显式 `redirect: 'error'`。
+- **落盘失败不再把成功签到误报为失败**：`saveState` 与 runner 的 try/catch 解耦，写入失败改为在结果上带 `persistError` 并记 warn；此前状态文件写不进去时（例如路径被占成目录 → `EISDIR`）面板显示 `ok:false` 且 `results:[]`，而 claim 其实已经成功、积分已到账，下次启动还会再签一次。
+- **失败态负缓存**：当日失败快照 60 秒内不再重打上游（此前只有成功快照有短路，故障日面板每 15 秒轮询都各打一次上游）。
+- **`creditsBefore` 不再自毁**：积分刷新不再把「签到前」基线覆写为当前值。
+- **note 清洗**：状态路由返回的 note 剥掉 `\r\n` 与 C0/C1 控制字符，避免上游响应片段伪造日志行或把不可见字符写进状态文件。
+- **重试分类**：Trae / WorkBuddy 只对网络故障与 `5xx` / `429` 重试，`4xx` 快速失败；`retryTimes` 在三个平台语义一致；Qoder 的 401 重换 jobToken 不再额外消耗一次重试额度。
+- **`mkdir` 权限**：状态目录创建补 `mode: 0o700`（此前跟随 umask，实测 755）。
+- **客户端**：刷新按钮改为发 `POST`（此前按 GET 发，host 侧「强制重查积分」从未接线）；超时由 15 秒提到 300 秒（host 侧最坏 210 秒，此前必然 abort 且服务端仍在跑）；CSS 注入 effect 返回 cleanup（热重载不再堆积 `<style>`）；平台清单抽为 `PLATFORM_KEYS` 单一来源；PAT 到期与签到徽标等 8 处文案改走 locale 字典；已签到时也显示 note；删除死代码 `patNoteOf`。
+- **工程化**：新增 `scripts.test`（`node --test "test/*.test.mjs"`）、`repository` 字段与 `test/` 回归用例。
 
 ### 1.3.7
 
