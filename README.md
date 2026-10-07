@@ -56,6 +56,8 @@ Trae / WorkBuddy。
 - `~/.dsh/.dsh-dual-checkin-workbuddy.json` — WorkBuddy 最近一次签到结果
 - `~/.dsh/.dsh-dual-checkin-qoder.json` — Qoder 最近一次签到结果
 
+文件名带 profile 维度：profile 名（`DSH_PROFILE`）合法时写成 `…-trae-<profile>.json`，否则沿用上面的全局名。升级后首次运行会先按新名查找、找不到再回退读旧名，因此**不会**因为改名而多签一次；旧文件保持原样不被改写，可以自行删除。快照带 `schemaVersion`，并在写入与读回前都剔除名字像凭据的字段（`token` / `pat` / `authorization` / `cookie` / `secret` / `apiKey` 等，含嵌套）。
+
 状态路由 `/plugins/dsh-dual-checkin/status`：`GET` 查看本次结果（当日已完成且快照在 TTL 内时无网络请求，超过 TTL 只重查积分、不重复签到）；`POST` 强制重查积分与状态（当日已签到的平台仍然跳过 claim，幂等）。
 
 ## 实现说明与已知限制
@@ -82,6 +84,19 @@ pnpm test       # node --test "test/*.test.mjs"
 回归用例把 `HOME` / `DSH_HOME` 重定向到临时目录并替换 `globalThis.fetch`，**不使用任何真实凭据、不发出任何真实请求**。
 
 ## 变更记录
+
+### 1.3.9
+
+结构收敛与纵深加固（对外行为兼容；配套回归用例 82 条，其中 14 条在 1.3.8 上失败）：
+
+- **三平台共用一份 HTTP 契约**：新增 `lib/http.mjs`（重试 / 退避 / 超时 / `Retry-After` / signal 透传 / `redirect: 'error'`）。此前 Trae / Qoder / WorkBuddy 各自复制了一份 `postJson` / `requestJson` / `tunables` / `sleep`，重试语义与 `defaults` 形状四次漂移（WorkBuddy 的 `defaults` 只有 2 个键）。
+- **退避带抖动**：重试前读上游 `Retry-After`（秒数或 HTTP 日期，上限 60 秒），否则按 `retryDelayMs` 做 ±20% 抖动，避免多平台同时重试对齐；`retryDelayMs: 0` 现在真的表示不等待（此前被回退成默认 5 秒）。
+- **卸载 / 热重载真正中止在飞请求**：`apply` 建 `AbortController`，dispose 时 abort 并清空内存里的 Qoder jobToken 与 WorkBuddy 解密密钥（旧实现只置 `disposed` 标志，请求照样跑完且旧闭包继续持有令牌）。
+- **落盘脱敏与版本号**：统一经 `stripSecrets` 剔除凭据形状字段，快照带 `schemaVersion: 1`；读回磁盘上的历史快照时也过一遍（TTL 内直接复用的快路径会把快照原样回给面板）。
+- **状态文件带 profile 维度**，并保留旧文件名的读回退（见「数据文件」）。
+- **WorkBuddy 加固**：解密子进程的环境变量收窄为白名单（不再整份继承 `process.env`）；`WORKBUDDY_ELECTRON_BIN` 需经 `realpath` + 常规文件 + `X_OK` 三重校验；缓存的解密密钥在 keyId 轮换后失效重取一次（此前会永久返回 0 个账号）。
+- **并行与容错**：WorkBuddy 多账号并行签到（结果顺序稳定）；积分刷新时单个账号查询失败不再放弃整批（全部失败才保留原快照）。
+- **客户端**：账号明细列表上屏（此前多账号只显示首个）；签到前后积分对比上屏（`creditsBefore → creditsAfter` 此前只在状态路由暴露）；积分到期提醒上屏（`expiringAlert` 此前零引用）；侧栏图标改用官方 `usePanelInfo` 读自己的选中态（`aria-current` / 高亮）；删除死键 `intro`。
 
 ### 1.3.8
 

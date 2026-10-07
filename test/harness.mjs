@@ -15,9 +15,18 @@ process.env.HOME = home;
 process.env.USERPROFILE = home;
 process.env.DSH_HOME = dshHome;
 delete process.env.WORKBUDDY_ELECTRON_BIN;
+// 状态文件带 profile 维度：测试进程常常继承真实的 DSH_PROFILE，不删掉的话
+// 文件名会多一个后缀，与「按平台名占位」的用例对不上。需要测 profile 的用例显式设置。
+delete process.env.DSH_PROFILE;
 
 export const homeDir = home;
 export const dshHomeDir = dshHome;
+
+// 状态文件路径（与 lib/index.mjs 的规则一致），供用例构造 / 断言。
+export function statePath(platform, profile) {
+  const suffix = profile ? '-' + profile : '';
+  return join(dshHome, '.dsh-dual-checkin-' + platform + suffix + '.json');
+}
 
 export const fetchCalls = [];
 
