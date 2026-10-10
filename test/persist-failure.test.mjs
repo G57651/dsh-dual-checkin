@@ -47,7 +47,12 @@ test('落盘失败时仍上报签到成功，并带 persistError', async () => {
   assert.equal(result.body.trae.checkedIn, true);
   assert.equal(result.body.trae.note, '签到成功，获得 +100 积分', '原 note 不得被 EISDIR 覆盖');
   assert.equal(typeof result.body.trae.persistError, 'string');
-  assert.match(result.body.trae.persistError, /EISDIR|illegal operation/u);
+  // 占位目录的失败形态按平台不同：POSIX 原子 rename 进目录报 EISDIR；win32 的
+  // rename 落在「目标已被目录占用」上，报 EPERM。两者都证明落盘失败被如实上报。
+  assert.match(
+    result.body.trae.persistError,
+    process.platform === 'win32' ? /EPERM/u : /EISDIR|illegal operation/u,
+  );
 });
 
 test('落盘失败是可见的，且状态文件路径未被执行破坏（仍是目录）', async () => {

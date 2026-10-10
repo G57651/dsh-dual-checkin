@@ -2,6 +2,8 @@
 // 两条硬约束：
 //   1) 在 import 插件之前把 HOME / DSH_HOME 重定向到临时目录，保证测试既不读真实凭据，
 //      也不写真实状态文件（lib/*.mjs 都在调用时经 homedir() / process.env 取值）；
+//      APPDATA / LOCALAPPDATA 一并重定向——Trae 与 WorkBuddy 在 win32 上经它们找凭据，
+//      不重定向的话 Windows 测试机会读到本机真实登录态；
 //   2) 把 globalThis.fetch 换成离线桩，默认直接抛错，任何测试都不可能发出真实请求。
 // 需要网络形态的测试请自行覆盖 globalThis.fetch（见 setFetch）。
 import { mkdtemp, mkdir } from 'node:fs/promises';
@@ -14,6 +16,8 @@ await mkdir(dshHome, { recursive: true, mode: 0o700 });
 process.env.HOME = home;
 process.env.USERPROFILE = home;
 process.env.DSH_HOME = dshHome;
+process.env.APPDATA = join(home, 'AppData', 'Roaming');
+process.env.LOCALAPPDATA = join(home, 'AppData', 'Local');
 delete process.env.WORKBUDDY_ELECTRON_BIN;
 // 状态文件带 profile 维度：测试进程常常继承真实的 DSH_PROFILE，不删掉的话
 // 文件名会多一个后缀，与「按平台名占位」的用例对不上。需要测 profile 的用例显式设置。

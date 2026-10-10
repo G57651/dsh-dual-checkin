@@ -50,12 +50,15 @@ test('S-01 回归：非法 ref 不抛异常（此前会抛 Unterminated characte
   await assert.doesNotReject(() => resolvePatFromFile('(a+)+b'));
 });
 
-test('S-04：凭据文件权限过宽时拒绝读取并给出可操作提示', async () => {
+test('S-04：POSIX 权限校验——过宽拒绝（POSIX），win32 跳过', async () => {
   await chmod(FILE, 0o644);
+  // win32 没有 POSIX 位、任何文件 stat 都报 666，「过宽」分支只能以显式 POSIX 平台断言；
+  // 显式 win32 则必须跳过校验照常读出——Windows 上合法文件正是 666，跳过才能让回退通道可用。
   await assert.rejects(
-    () => resolvePatFromFile('QODER_MANAGED_CREDENTIAL'),
+    () => resolvePatFromFile('QODER_MANAGED_CREDENTIAL', { platform: 'darwin' }),
     /权限过宽|chmod 600/u,
   );
+  assert.equal(await resolvePatFromFile('QODER_MANAGED_CREDENTIAL', { platform: 'win32' }), 'REAL_QODER_PAT');
   await chmod(FILE, 0o600);
 });
 

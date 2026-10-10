@@ -85,6 +85,14 @@ pnpm test       # node --test "test/*.test.mjs"
 
 ## 变更记录
 
+### 1.3.10
+
+Windows 平台适配（macOS 行为与显式 `WORKBUDDY_ELECTRON_BIN` 优先级均不变；回归用例扩到 88 条，新增 win32 路径用例与注入桩）：
+
+- **Windows 默认路径识别**：此前 `resolveElectronPath` 只有 macOS 默认路径，Windows 一律抛「请设置 WORKBUDDY_ELECTRON_BIN」。现在 win32 分支按可靠性顺序自动探测：卸载表三个视图（HKCU / HKLM / HKLM WOW6432Node）里的 `DisplayIcon`（剥引号与图标索引，只接受 `WorkBuddy.exe`）与 `InstallLocation`，再到四个默认安装目录（`%LOCALAPPDATA%\Programs`、`%LOCALAPPDATA%`、`%ProgramFiles%`、`%ProgramFiles(x86)%` 下的 `WorkBuddy\WorkBuddy.exe`），候选统一走与显式配置一致的三重校验；自定义盘符安装（如 `D:\Program Files\WorkBuddy`）靠注册表命中。探测进程带 `windowsHide`，DSH 无控制台宿主下不再闪黑框。
+- **Qoder 回退通道在 Windows 可用**：`.credentials.yaml` 的 POSIX 权限校验（`mode & 0o077`）在 NTFS 上对任何文件都判「过宽」（Windows 无 POSIX 位，文件恒报 666），回退直读通道此前在 Windows 上永远被拒；现在 win32 跳过该校验（实际防护由 NTFS ACL 承担，宿主 credentials-local 服务路径不受影响）。校验逻辑新增 `platform` 参数，POSIX 分支语义原样。
+- **回归用例 Windows 适配**：夹具把 `APPDATA` / `LOCALAPPDATA` 一并重定向到临时目录——Trae 与 WorkBuddy 在 win32 上经它们找凭据，此前 Windows 测试机会读到本机真实登录态，把「无凭据零网络请求」用例打穿；`X_OK`「不可执行」断言改为 POSIX 专属（win32 无可执行位概念）；落盘失败用例按平台断言错误形态（POSIX 的 EISDIR / win32 的 EPERM）；S-04 权限用例改为显式注入 `darwin` / `win32` 双平台互证。注册表解析、候选顺序与三重校验全部经 `queryRegistry` 注入桩覆盖，测试永不读本机注册表。
+
 ### 1.3.9
 
 结构收敛与纵深加固（对外行为兼容；配套回归用例 82 条，其中 14 条在 1.3.8 上失败）：

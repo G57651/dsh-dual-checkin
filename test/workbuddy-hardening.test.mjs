@@ -69,10 +69,14 @@ test('resolveElectronPath 只接受可执行的常规文件', async () => {
     async () => resolveElectronPath({ WORKBUDDY_ELECTRON_BIN: join(dir, 'missing') }, 'darwin'),
     /不可解析|不存在/u,
   );
-  const plain = join(dir, 'not-exec');
-  await writeFile(plain, '#!/bin/sh\n', 'utf8');
-  await chmod(plain, 0o644);
-  await assert.rejects(async () => resolveElectronPath({ WORKBUDDY_ELECTRON_BIN: plain }, 'darwin'), /不可执行/u);
+  if (process.platform !== 'win32') {
+    // win32 没有 POSIX 可执行位：accessSync(X_OK) 对任何常规文件都放行，
+    // 「不可执行」拒绝分支只在 POSIX 平台上可断言。
+    const plain = join(dir, 'not-exec');
+    await writeFile(plain, '#!/bin/sh\n', 'utf8');
+    await chmod(plain, 0o644);
+    await assert.rejects(async () => resolveElectronPath({ WORKBUDDY_ELECTRON_BIN: plain }, 'darwin'), /不可执行/u);
+  }
 
   const runner = join(dir, 'run-me');
   await writeFile(runner, '#!/bin/sh\nexit 0\n', 'utf8');
