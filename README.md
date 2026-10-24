@@ -24,7 +24,7 @@ dsh plugin --profile desktop add github:G57651/dsh-dual-checkin
 **Web UI**：Plugins 页 → Git 填 `github:G57651/dsh-dual-checkin`；或下载 Release / `pnpm pack` 产出的 tarball 后：
 
 ```sh
-dsh plugin --profile desktop add dsh-dual-checkin-1.3.7.tgz
+dsh plugin --profile desktop add dsh-dual-checkin-1.3.11.tgz
 ```
 
 **克隆后本地安装**
@@ -84,6 +84,14 @@ pnpm test       # node --test "test/*.test.mjs"
 回归用例把 `HOME` / `DSH_HOME` 重定向到临时目录并替换 `globalThis.fetch`，**不使用任何真实凭据、不发出任何真实请求**。
 
 ## 变更记录
+
+### 1.3.11
+
+适配 DSH 0.2.1-rc.2（行为与接口零变化，仅清单声明与验证）：
+
+- **新增 `engines.dsh`**：`^0.2.0-rc.1 || ^0.2.1-rc.2`。此前只有 `engines.node`，宿主对 dsh 的兼容性只能靠 `@deepseek-ai/dsh-*` peer 逐个判定。
+- **dsh-* peer 范围补上 `^0.2.1-rc.2`**：`@deepseek-ai/dsh-client-locale`、`dsh-client-ui-slots`、`dsh-host-webserver` 三个 peer 的原范围以 `^0.2.0-rc.1` 结尾。宿主 app-boot 的 `evaluatePluginCompatibility` 用 `semver.satisfies(..., { includePrerelease: true })` 判定，该范围**能**匹配 0.2.1-rc.2；但按 semver 默认语义（不带 `includePrerelease`）它**不匹配**，`pnpm` 等按默认语义检查的工具会报 peer 冲突。补上显式版本消除这一歧义。
+- **验证**：`pnpm test` 88 条回归用例在 0.2.1-rc.2 的 devDependencies 下全绿；客户端 bundle 外壳（`window.__ModuleLoader__.load` / `id` / `factory`）与 `require` 解析（仅 `react`）经静态校验通过。
 
 ### 1.3.10
 
