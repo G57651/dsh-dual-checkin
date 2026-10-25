@@ -85,6 +85,16 @@ pnpm test       # node --test "test/*.test.mjs"
 
 ## 变更记录
 
+
+### 1.3.12
+
+适配 DSH 0.2.1-rc.3（行为与接口零变化，仅清单声明与依赖对齐）：
+
+- **`engines.dsh` 补上 `^0.2.1-rc.3`**：范围变为 `^0.2.0-rc.1 || ^0.2.1-rc.2 || ^0.2.1-rc.3`。
+- **三个 `@deepseek-ai/dsh-*` peer 范围同步补上 `^0.2.1-rc.3`**：`dsh-client-locale`、`dsh-client-ui-slots`、`dsh-host-webserver`。原范围以 `^0.2.1-rc.2` 结尾，在宿主 `includePrerelease` 判定下能匹配 rc.3，但按 semver 默认语义不匹配；显式补齐消除歧义，也让 `pnpm` 等默认语义工具不再报 peer 冲突。
+- **devDependencies 全部对齐 0.2.1-rc.3**：上述三个包从 0.2.0-rc.2 升到 0.2.1-rc.3。
+- **验证**：`node --test` 88 条回归用例全绿；客户端 bundle 外壳（`window.__ModuleLoader__.load` / `id` / `factory`）与 `require` 解析经静态校验通过；按宿主真实判定逻辑对 0.2.1-rc.3 / rc.2 / 0.2.0-rc.1 三版本判定全 PASS。
+
 ### 1.3.11
 
 适配 DSH 0.2.1-rc.2（行为与接口零变化，仅清单声明与验证）：
