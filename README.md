@@ -24,7 +24,7 @@ dsh plugin --profile desktop add github:G57651/dsh-dual-checkin
 **Web UI**：Plugins 页 → Git 填 `github:G57651/dsh-dual-checkin`；或下载 Release / `pnpm pack` 产出的 tarball 后：
 
 ```sh
-dsh plugin --profile desktop add dsh-dual-checkin-1.3.11.tgz
+dsh plugin --profile desktop add dsh-dual-checkin-1.3.12.tgz
 ```
 
 **克隆后本地安装**
